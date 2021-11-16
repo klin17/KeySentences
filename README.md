@@ -7,7 +7,7 @@ Project to extract key sentences from a text.
 - numpy
 
 
-## Data Set Acquisition
+## Data Set Acquisition and Transformation
 Download using the cnn "stories" linked here: https://cs.nyu.edu/~kcho/DMQA/ which should download as "cnn_stories.tgz"
 1. Unzip the .tgz
 1. Convert each .story file into a .txt file
@@ -29,10 +29,25 @@ eg:
 
 ```python change_extensions.py cnn_stories .story .txt```
 
-Step 3 can be done using data_cleaning.py
+Step 3 can be done using data_cleaning.py (which takes around 100 minutes per run)
 Useage:
 
 `python data_cleaning.py`
+
+Results for data_cleaning with different thresholds:
+Threshold | Files Produced | Files Failed | Percent Retention |
+---|---|---|---
+0.65 | 60961 | 9894 | 86.04%
+0.7 | 48271 | 22584 | 68.13%
+0.8 | 17670 | 53185 | 24.94%
+0.9 | 3513 | 67340 | 4.96%
+
+Revised Results for data_cleaning with different thresholds:
+Threshold | Files Produced | Files Failed | Percent Failure | Time (s)
+---|---|---|---|---
+0.65 | 79459 | 13120 | 14.171680402683114% | 8938
+
+Took around 150 min per run
 
 ## Initial Testing
 Will be done in `testing.py`

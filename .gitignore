@@ -1,2 +1,4 @@
-cnn_stories/*
+cnn_stories
 labeled_data/*
+labeled_data*
+stories

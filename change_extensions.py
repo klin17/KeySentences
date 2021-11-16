@@ -1,7 +1,7 @@
 import os
 import sys
 
-USEAGE = "Useage: python change_extensions <filename> <fromext> <toext>"
+USAGE = "Usage: python change_extensions <filename> <fromext> <toext>"
 
 if __name__ == "__main__":
     # extract args
@@ -10,7 +10,7 @@ if __name__ == "__main__":
     # check num args
     if len(arg_strings) != 3:
         print("ERROR: Incorrect number of arguments -- expected 3, got {}".format(len(arg_strings)))
-        print(USEAGE) 
+        print(USAGE) 
         exit(-1)
 
     # split args
@@ -29,7 +29,9 @@ if __name__ == "__main__":
 
     # change all extensions which match <fromext> to <toext> inside directory <argdir>
     print("Changing all files in /{} with a {} extension to use a {} extension instead...".format(argdir, fromext, toext))
-    for filename in os.listdir(argdir):
+    files = os.listdir(argdir)
+    print("{} files in directory".format(len(files)))
+    for filename in files:
         path = os.path.join(argdir, filename)
         pre, ext = os.path.splitext(path)
         if ext == fromext:
