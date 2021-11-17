@@ -34,20 +34,34 @@ Useage:
 
 `python data_cleaning.py`
 
-Results for data_cleaning with different thresholds:
-Threshold | Files Produced | Files Failed | Percent Retention |
----|---|---|---
-0.65 | 60961 | 9894 | 86.04%
-0.7 | 48271 | 22584 | 68.13%
-0.8 | 17670 | 53185 | 24.94%
-0.9 | 3513 | 67340 | 4.96%
+[//]: # (these are comments)
+
+[//]: # (Results for data_cleaning with different thresholds:)
+[//]: # (Threshold | Files Produced | Files Failed | Percent Retention |)
+[//]: # (---|---|---|---)
+[//]: # (0.65 | 60961 | 9894 | 86.04%)
+[//]: # (0.7 | 48271 | 22584 | 68.13%)
+[//]: # (0.8 | 17670 | 53185 | 24.94%)
+[//]: # (0.9 | 3513 | 67340 | 4.96%)
 
 Revised Results for data_cleaning with different thresholds:
 Threshold | Files Produced | Files Failed | Percent Failure | Time (s)
 ---|---|---|---|---
 0.65 | 79459 | 13120 | 14.171680402683114% | 8938
+0.7 | 62674 | 29905 | 32.30214195443891% | 7738
+0.8 | 22651 | 69928 | 75.53332829259335% | 10209\*
+0.9 | 4523 | 88056 | 95.11444280020307% | 9211
+
+\* estimated time
 
 Took around 150 min per run
+
+## Baseline
+
+The baseline is a model that uses pagerank on sentence vectors and selects the top n ranked sentences
+where n is the number of key sentences in the article.
+
+To analyze the output we use the number of positively identified key sentences (tp), the number of total key sentences (k). In addition we can weigh this by how many sentences are in each article (s). We can thus calculate an "accuracy" of tp/(k\*s)
 
 ## Initial Testing
 Will be done in `testing.py`

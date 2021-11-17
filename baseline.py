@@ -92,13 +92,18 @@ def baseline(path, top_n=3):
     # Step 1 - Read text and split it
     sentences = []
     vectors = []
+    found_highlight = False
     with open(path, "r", encoding="utf-8") as file:
         lines = [l.strip() for l in file.readlines() if len(l.strip()) > 0]
         for doc in nlp.pipe(lines):
             for sent in doc.sents:
-                sentences.append(sent.text)
-                vectors.append(sent.vector)
-        
+                if sent.text == "@highlight":
+                    # print("found highlight")
+                    found_highlight = True
+                if not found_highlight:
+                    sentences.append(sent.text)
+                    vectors.append(sent.vector)
+
     # Step 2 - Generate Similary Martix across sentences
     def find_similarity(s1idx, s2idx):
         return 1 - cosine_distance(vectors[s1idx], vectors[s2idx])
@@ -111,22 +116,27 @@ def baseline(path, top_n=3):
                 continue 
             similarity_matrix[idx1][idx2] = find_similarity(idx1, idx2)
 
+    # print(sentences)
+
     # Step 3 - Rank sentences in similarity martix
     sentence_similarity_graph = nx.from_numpy_array(similarity_matrix)
-    scores = nx.pagerank(sentence_similarity_graph)
+    scores = nx.pagerank_numpy(sentence_similarity_graph)
 
     # Step 4 - Sort the rank and pick top sentences
     ranked_sentence = sorted(((scores[i],s) for i,s in enumerate(sentences)), reverse=True)    
     # print("Indexes of top ranked_sentence order are ", ranked_sentence)    
 
     # print("loop starting {}".format(top_n))
+    if top_n >= len(ranked_sentence):
+        print("WARN: n capped from {} to {}".format(top_n, len(ranked_sentence)))
+        top_n = len(ranked_sentence)
     for i in range(top_n):
         # print("appending {}".format(i))
         summarize_text.append(ranked_sentence[i][1])
 
     # # Step 5 - Offcourse, output the summarize texr
     # print("Summarize Text: \n", " ".join(summarize_text))
-    return summarize_text
+    return summarize_text, len(sentences)
 
 def get_key_sentences(labeled_path):
     key_sentences = []
@@ -138,32 +148,49 @@ def get_key_sentences(labeled_path):
                 key_sentences.append(sentence)
     return key_sentences
 
-# def compare(labeled):
-
 
 if __name__ == "__main__":
     print("finished imports")
 
-    raw_name = "000c835555db62e319854d9f8912061cdca1893e"
-    story_file = os.path.join("stories", raw_name + ".txt")
-    labeled_file = os.path.join("labeled_data2_0.65", raw_name + "_labeled.csv")
+    data_dir = "labeled_data2_0.7"
+    files = os.listdir(data_dir)
+    num_files = len(files)
+    count = 0
+    scores = []
+    for file in files[:500]:
+        if count % 10 == 0:
+            print(count)
+        basename = os.path.basename(file)
+        pre, ext = os.path.splitext(basename)
+        raw_name = pre.split("_")[0]
 
-    key_sentences = get_key_sentences(labeled_file)
-    print("key sentences:")
-    # print(key_sentences)
-    for sentence in key_sentences:
-        print(repr(sentence))
-    top_n = len(key_sentences)
+        story_file = os.path.join("stories", raw_name + ".txt")
+        labeled_file = os.path.join("labeled_data2_0.65", raw_name + "_labeled.csv")
 
-    print("finished extracting key sentences")
+        key_sentences = get_key_sentences(labeled_file)
+        # print("key sentences:")
+        # print(key_sentences)
+        # for sentence in key_sentences:
+        #     print(repr(sentence))
+        top_n = k = len(key_sentences)
 
-    predicted = baseline(story_file, top_n=top_n)
+        # print("finished extracting key sentences")
 
-    # print("predicted:")
-    # print(predicted)
+        predicted, s = baseline(story_file, top_n=top_n)
 
-    print("results")
-    for sentence in predicted:
-        print(repr(sentence))
-        print(sentence in key_sentences)
+        # print("predicted:")
+        # print(predicted)
+
+        # print("results")
+        tp = 0
+        for sentence in predicted:
+            # print(repr(sentence))
+            # print(sentence in key_sentences)
+            if sentence in key_sentences:
+                tp += 1
+        scores.append(tp/(k))
+        count += 1
+    print(np.mean(scores))
+
+
     

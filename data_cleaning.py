@@ -96,7 +96,7 @@ if __name__ == "__main__":
     # load spaCy
     nlp = spacy.load("en_core_web_sm")
 
-    for threshold in [0.7, 0.8, 0.9]:
+    for threshold in [0.7]:
 
         data_dir = "stories"
         out_dir = "labeled_data2_" + str(threshold)
