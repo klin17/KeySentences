@@ -7,6 +7,7 @@ import networkx as nx
 import spacy
 import os
 import csv
+import time
 
 nlp = spacy.load("en_core_web_sm")
 
@@ -86,6 +87,9 @@ nlp = spacy.load("en_core_web_sm")
 #     # Step 5 - Offcourse, output the summarize texr
 #     print("Summarize Text: \n", ". ".join(summarize_text))
 
+def find_similarity(s1idx, s2idx, vs):
+    return 1 - cosine_distance(vs[s1idx], vs[s2idx])
+
 def baseline(path, top_n=3):
     summarize_text = []
 
@@ -103,24 +107,27 @@ def baseline(path, top_n=3):
                 if not found_highlight:
                     sentences.append(sent.text)
                     vectors.append(sent.vector)
-
     # Step 2 - Generate Similary Martix across sentences
-    def find_similarity(s1idx, s2idx):
-        return 1 - cosine_distance(vectors[s1idx], vectors[s2idx])
-
     similarity_matrix = np.zeros((len(sentences), len(sentences)))
  
     for idx1 in range(len(sentences)):
         for idx2 in range(len(sentences)):
             if idx1 == idx2: #ignore if both are same sentences
                 continue 
-            similarity_matrix[idx1][idx2] = find_similarity(idx1, idx2)
+            similarity_matrix[idx1][idx2] = find_similarity(idx1, idx2, vectors)
 
     # print(sentences)
 
     # Step 3 - Rank sentences in similarity martix
     sentence_similarity_graph = nx.from_numpy_array(similarity_matrix)
-    scores = nx.pagerank_numpy(sentence_similarity_graph)
+    try:
+        # scores = nx.pagerank_numpy(sentence_similarity_graph)
+        scores = nx.pagerank(sentence_similarity_graph, max_iter=1000)
+        # print("success: {}".format(len(sentences)))
+    except:
+        # print("failed: {}".format(len(sentences)))
+        # print(sentences)
+        return False, len(sentences)
 
     # Step 4 - Sort the rank and pick top sentences
     ranked_sentence = sorted(((scores[i],s) for i,s in enumerate(sentences)), reverse=True)    
@@ -152,20 +159,31 @@ def get_key_sentences(labeled_path):
 if __name__ == "__main__":
     print("finished imports")
 
-    data_dir = "labeled_data2_0.7"
+    data_dir = "labeled_data2_0.8"
+    story_dir = "stories"
+
     files = os.listdir(data_dir)
     num_files = len(files)
+    print("Total files: {}".format(num_files))
     count = 0
+    score_sum = 0
     scores = []
-    for file in files[:500]:
-        if count % 10 == 0:
-            print(count)
+    sum_tp = sum_fp = sum_tn = sum_fn = 0
+    sum_k = 0
+    num_fails = 0
+    time0 = time.time()
+    prev_time = time.time()
+    for file in files:
+        if count % 556 == 0:
+            this_time = time.time()
+            print("{}/{} = {}%, in {} seconds".format(count, num_files, 100*count/num_files, this_time - prev_time))
+            prev_time = this_time
         basename = os.path.basename(file)
         pre, ext = os.path.splitext(basename)
         raw_name = pre.split("_")[0]
 
-        story_file = os.path.join("stories", raw_name + ".txt")
-        labeled_file = os.path.join("labeled_data2_0.65", raw_name + "_labeled.csv")
+        story_file = os.path.join(story_dir, raw_name + ".txt")
+        labeled_file = os.path.join(data_dir, raw_name + "_labeled.csv")
 
         key_sentences = get_key_sentences(labeled_file)
         # print("key sentences:")
@@ -178,19 +196,48 @@ if __name__ == "__main__":
 
         predicted, s = baseline(story_file, top_n=top_n)
 
+        if not predicted:
+            num_fails += 1
+            continue
+
         # print("predicted:")
         # print(predicted)
 
         # print("results")
-        tp = 0
+        tp = fp = 0
         for sentence in predicted:
             # print(repr(sentence))
             # print(sentence in key_sentences)
             if sentence in key_sentences:
                 tp += 1
+            else:
+                fp += 1
+        fn = len(set(key_sentences) - set(predicted))
+        tn = s - (fn + tp + fp)
+
+        score_sum += tp/k
+        
+        sum_tp += tp
+        sum_fp += fp
+        sum_tn += tn
+        sum_fn += fn
+        sum_k += k
         scores.append(tp/(k))
         count += 1
-    print(np.mean(scores))
+    print("finished {} files".format(count))
+    print("total time: {} seconds".format(prev_time - time0))
+    print("Failures: {}".format(num_fails))
+    print("average: {}".format(np.mean(scores)))
+    print(sum_tp, sum_tn, sum_fp, sum_fn, sum_k)
+    print(sum_tp + sum_tn + sum_fp + sum_fn)
+    print(score_sum / count)
+    print("accuracy: sum_tp/sum_k = {}".format(sum_tp/sum_k))
+    precision = sum_tp/(sum_tp + sum_fp)
+    print("precision: tp/(tp+fp) = {}".format(precision))
+    recall = sum_tp/(sum_tp + sum_fn)
+    print("recall: tp/(tp+fn) = {}".format(recall))
+    print("f1: 2*precision*recall/(precision + recall) = {}".format(2*precision*recall/(precision + recall)))
+
 
 
     

@@ -5,6 +5,8 @@ Project to extract key sentences from a text.
 ## Requirements
 - spaCy, including the `en_core_web_sm` pipeline
 - numpy
+- nltk
+- networkx
 
 
 ## Data Set Acquisition and Transformation
@@ -49,10 +51,11 @@ Threshold | Files Produced | Files Failed | Percent Failure | Time (s)
 ---|---|---|---|---
 0.65 | 79459 | 13120 | 14.171680402683114% | 8938
 0.7 | 62674 | 29905 | 32.30214195443891% | 7738
+0.75 | 41380 | 51199 | 55.30303848604975% | 11460
 0.8 | 22651 | 69928 | 75.53332829259335% | 10209\*
 0.9 | 4523 | 88056 | 95.11444280020307% | 9211
 
-\* estimated time
+\* estimated time (output of 31309 includes time when program was paused)
 
 Took around 150 min per run
 
@@ -61,7 +64,42 @@ Took around 150 min per run
 The baseline is a model that uses pagerank on sentence vectors and selects the top n ranked sentences
 where n is the number of key sentences in the article.
 
-To analyze the output we use the number of positively identified key sentences (tp), the number of total key sentences (k). In addition we can weigh this by how many sentences are in each article (s). We can thus calculate an "accuracy" of tp/(k\*s)
+### Steps:
+1. Read the input file and split the text into sentences and vectors for each sentence
+2. Generate a similarity matrix holding the cosine similarities between each sentence using the vectors
+3. Use PageRank on this matrix to find the most important sentences
+4. Output the top n sentences from PageRank
+
+### Analysis:
+#### Raw output:
+pagerank_numpy():
+```
+2822 684393 26455 26446 29277
+740116
+accuracy: sum_tp/sum_k = 0.09638965741025378
+precision: tp/(tp+fp) = 0.09638965741025378
+recall: tp/(tp+fn) = 0.0964192975263086
+f1: 2*precision*recall/(precision + recall) = 0.09640447519002478
+```
+
+pagerank():
+```
+Failures: 705
+average: 0.07432243896315996
+2761 660491 25593 25584 28354
+714429
+0.07432243896315983
+accuracy: sum_tp/sum_k = 0.09737603160047965
+precision: tp/(tp+fp) = 0.09737603160047965
+recall: tp/(tp+fn) = 0.09740695007937908
+f1: 2*precision*recall/(precision + recall) = 0.09739148838603855
+```
+
+The numbers in the first line are tp, tn, fp, fn, k, respectively, with k being the total number of key sentences
+
+Since we use the number of key sentences in the article as n, the number of false positives and false negatives is exactly the same. Thus the precision and recall tell us the same information: how many of the top n ranked sentences from pagerank are actually key sentences on average. Accuracy, true positives / total number of actual positives, is not useful since there are not many key sentences in general.
+
+The baseline took around 33 minutes to run on 22651 documents.
 
 ## Initial Testing
 Will be done in `testing.py`
