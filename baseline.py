@@ -8,6 +8,7 @@ import spacy
 import os
 import csv
 import time
+import math
 
 nlp = spacy.load("en_core_web_sm")
 
@@ -96,17 +97,22 @@ def baseline(path, top_n=3):
     # Step 1 - Read text and split it
     sentences = []
     vectors = []
-    found_highlight = False
     with open(path, "r", encoding="utf-8") as file:
-        lines = [l.strip() for l in file.readlines() if len(l.strip()) > 0]
-        for doc in nlp.pipe(lines):
-            for sent in doc.sents:
-                if sent.text == "@highlight":
-                    # print("found highlight")
-                    found_highlight = True
-                if not found_highlight:
-                    sentences.append(sent.text)
-                    vectors.append(sent.vector)
+        reader = csv.DictReader(file)
+        for line in reader:
+            sentences.append(line["sentence"])
+            vectors.append(nlp(line["sentence"]).vector)
+    # with open(path, "r", encoding="utf-8") as file:
+    #     for line in file.readlines():
+    #         print(line)
+    #         return
+    #         # if sent.text == "@highlight":
+    #         #     # print("found highlight")
+    #         #     found_highlight = True
+    #         # if not found_highlight:
+    #         #     sentences.append(sent.text)
+    #         #     vectors.append(sent.vector)
+
     # Step 2 - Generate Similary Martix across sentences
     similarity_matrix = np.zeros((len(sentences), len(sentences)))
  
@@ -160,11 +166,13 @@ if __name__ == "__main__":
     print("finished imports")
 
     data_dir = "labeled_data2_0.8"
-    story_dir = "stories"
+    # story_dir = "stories"
 
     files = os.listdir(data_dir)
     num_files = len(files)
     print("Total files: {}".format(num_files))
+    files_used = files[:math.floor(0.75*num_files)]
+    print("Actual files: {}".format(len(files_used)))
     count = 0
     score_sum = 0
     scores = []
@@ -173,7 +181,8 @@ if __name__ == "__main__":
     num_fails = 0
     time0 = time.time()
     prev_time = time.time()
-    for file in files:
+
+    for file in files_used:
         if count % 556 == 0:
             this_time = time.time()
             print("{}/{} = {}%, in {} seconds".format(count, num_files, 100*count/num_files, this_time - prev_time))
@@ -182,7 +191,7 @@ if __name__ == "__main__":
         pre, ext = os.path.splitext(basename)
         raw_name = pre.split("_")[0]
 
-        story_file = os.path.join(story_dir, raw_name + ".txt")
+        # story_file = os.path.join(story_dir, raw_name + ".txt")
         labeled_file = os.path.join(data_dir, raw_name + "_labeled.csv")
 
         key_sentences = get_key_sentences(labeled_file)
@@ -194,7 +203,7 @@ if __name__ == "__main__":
 
         # print("finished extracting key sentences")
 
-        predicted, s = baseline(story_file, top_n=top_n)
+        predicted, s = baseline(labeled_file, top_n=top_n)
 
         if not predicted:
             num_fails += 1
@@ -228,9 +237,12 @@ if __name__ == "__main__":
     print("total time: {} seconds".format(prev_time - time0))
     print("Failures: {}".format(num_fails))
     print("average: {}".format(np.mean(scores)))
-    print(sum_tp, sum_tn, sum_fp, sum_fn, sum_k)
-    print(sum_tp + sum_tn + sum_fp + sum_fn)
-    print(score_sum / count)
+    print(f"{sum_tp=}, {sum_tn=}, {sum_fp=}, {sum_fn=}")
+    print(f"{sum_k=}, {score_sum/count=}")
+    print(f"{sum_tp + sum_tn + sum_fp + sum_fn =}")
+    # print(sum_tp, sum_tn, sum_fp, sum_fn, sum_k)
+    # print(sum_tp + sum_tn + sum_fp + sum_fn)
+    # print(score_sum / count)
     print("accuracy: sum_tp/sum_k = {}".format(sum_tp/sum_k))
     precision = sum_tp/(sum_tp + sum_fp)
     print("precision: tp/(tp+fp) = {}".format(precision))

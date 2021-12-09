@@ -101,5 +101,65 @@ Since we use the number of key sentences in the article as n, the number of fals
 
 The baseline took around 33 minutes to run on 22651 documents.
 
-## Initial Testing
-Will be done in `testing.py`
+## Logistic Regression
+The actual model uses Logistic Regression to do binary classification on sentences of an article.
+
+### Features:
+- number of named entities
+- number of tokens in the sentence
+- number of chars in the sentence
+- character to token ratio
+- similarity to document
+- similarity to a context (with window sizes 1 through 5)
+- sentence embedding
+
+### Analysis:
+#### Raw output:
+With all features:
+```
+Total time: 1728.25267
+num_sentences=185567
+num_act_true=7277
+num_pred_true=87504
+num_act_false=178290
+num_pred_false=98063
+actuals: 185567
+preds: 185567
+fp=81759, fn=1532, tp=5745, tn=96531
+Accuracy = 0.5511540306196684
+Precision = 0.06565414152495885
+Recall = 0.7894736842105263
+F1 = 0.12122682816176236
+```
+
+Without embeddings:
+```
+Created features in 1758.85846 s
+Total time: 1764.96069
+num_sentences=185567
+num_act_true=7277
+num_pred_true=81537
+num_act_false=178290
+num_pred_false=104030
+actuals: 185567
+preds: 185567
+fp=76443, fn=2183, tp=5094, tn=101847
+Accuracy = 0.5762931986829555
+Precision = 0.062474704735273556
+Recall = 0.7000137419266181
+F1 = 0.11471164456054224
+```
+
+Only embeddings:
+```
+185567
+7277
+19
+17
+7275
+2
+178273
+```
+In order: total number of sentences, number of highlights, number of sentences predicted as highlights, fp, fn, tp, tn.
+
+Takes around 30 minutes to run on 22651 documents.
